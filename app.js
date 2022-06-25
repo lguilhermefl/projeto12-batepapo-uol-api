@@ -24,8 +24,9 @@ setInterval(async () => {
 		.find({ lastStatus: { $lt: minTime } })
 		.forEach(async function (participant) {
 			const from = participant.name;
+			const time = dayjs().format("HH:mm:ss");
 			await db.collection("messages")
-				.insertOne({ from, to: "Todos", text: 'sai da sala...', type: "status", time: Date.now() });
+				.insertOne({ from, to: "Todos", text: 'sai da sala...', type: "status", time });
 		});
 	await db.collection("participants").deleteMany({ lastStatus: { $lt: minTime } });
 }, 15000);
