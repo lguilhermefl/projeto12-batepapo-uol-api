@@ -17,6 +17,19 @@ mongoClient.connect().then(() => {
 	db = mongoClient.db("chat_uol");
 });
 
+setInterval(async () => {
+	const minTime = Date.now() - 10000;
+
+	await db.collection("participants")
+		.find({ lastStatus: { $lt: minTime } })
+		.forEach(async function (participant) {
+			const from = participant.name;
+			await db.collection("messages")
+				.insertOne({ from, to: "Todos", text: 'sai da sala...', type: "status", time: Date.now() });
+		});
+	await db.collection("participants").deleteMany({ lastStatus: { $lt: minTime } });
+}, 15000);
+
 app.post('/participants', async (req, res) => {
 	let name = req.body.name;
 
@@ -56,7 +69,7 @@ app.post('/participants', async (req, res) => {
 app.get('/participants', async (req, res) => {
 	try {
 		const participants = await db.collection("participants").find().toArray();
-		res.send(participants);
+		res.status(200).send(participants);
 	} catch (err) {
 		console.error(err);
 		res.sendStatus(500);
@@ -109,8 +122,49 @@ app.post('/messages', async (req, res) => {
 	}
 });
 
-app.get('/messages', (req, res) => {
+app.get('/messages', async (req, res) => {
+	let limit = parseInt(req.query.limit);
+	const user = req.headers.user;
 
+	if (!limit) {
+		limit = 0;
+	}
+
+	try {
+		const allMessages = await db.collection("messages")
+			.find({
+				$or: [
+					{ to: 'Todos' },
+					{ type: 'message' },
+					{ from: user },
+					{ to: user },
+				],
+			})
+			.limit(limit)
+			.toArray();
+
+		res.status(200).send(allMessages);
+	} catch (err) {
+		console.error(err);
+		res.sendStatus(500);
+	}
+});
+
+app.post('/status', async (req, res) => {
+	const user = req.headers.user;
+	const isParticipantOnChat = await db.collection("participants").findOne({ name: user });
+
+	if (!isParticipantOnChat) {
+		res.sendStatus(404);
+		return;
+	}
+	try {
+		await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
+		res.sendStatus(200);
+	} catch (err) {
+		console.error(err);
+		res.sendStatus(500);
+	}
 });
 
 app.listen(5000);

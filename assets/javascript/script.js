@@ -24,7 +24,7 @@ function registrarParticipante() {
 function entrarNaSala() {
   carregarMensagens();
   carregarParticipantes();
-  
+
   agendarAtualizacaoDeMensagens();
   agendarAtualizacaoDeParticipantes();
   agendarAtualizacaoDeStatus();
@@ -95,8 +95,8 @@ function enviarMensagem() {
   const texto = input.value;
   input.value = "";
 
-  if(texto === "") return;
-   
+  if (texto === "") return;
+
   const dados = {
     to: destinatario,
     text: texto,
@@ -159,7 +159,7 @@ function atualizarEnviando() {
 
   elemento.innerText = "Enviando para " + destinatario;
 
-  if(tipoMensagem === "private_message") {
+  if (tipoMensagem === "private_message") {
     elemento.innerText += " (reservadamente)";
   }
 }
@@ -185,29 +185,26 @@ function renderizarMensagens() {
     html += `
       <li class="mensagem ${classesMensagens[mensagem.type]}">
         <div class="conteudo-mensagem">
-          ${
-            mensagem.time !== undefined
-            ? `<span class="horario">(${mensagem.time})</span>`
-            : ``
-          }
+          ${mensagem.time !== undefined
+        ? `<span class="horario">(${mensagem.time})</span>`
+        : ``
+      }
 
           <span>
             <strong>${mensagem.from}</strong>
           </span>
 
-          ${
-            mensagem.type === "private_message"
-            ? `<span> reservadamente para </span>`
-            : `<span> para </span>`
-          }
+          ${mensagem.type === "private_message"
+        ? `<span> reservadamente para </span>`
+        : `<span> para </span>`
+      }
 
           <strong>${mensagem.to}</strong>
           <span class="text">${mensagem.text}</span>
         </div>
         <div class="acoes-mensagem">
-          ${
-            ((mensagem.from === nome && mensagem.type.indexOf("message") > -1 && mensagem.time) || "") &&
-             `
+          ${((mensagem.from === nome && mensagem.type.indexOf("message") > -1 && mensagem.time) || "") &&
+      `
               <button class="editar" onclick="editarMensagem(this, '${mensagem._id}')">
                 <ion-icon name="create"></ion-icon>
               </button>
@@ -216,7 +213,7 @@ function renderizarMensagens() {
                 <ion-icon name="trash"></ion-icon>
               </button>
              `
-          }
+      }
         </div>
       </li>
     `;
@@ -237,11 +234,10 @@ function renderizarParticipantes() {
 
     html += `
       <li onclick="trocarDestinatario(this)" class="${participante.name === destinatario ? "selecionado" : ""}">
-        ${
-          participante.name === "Todos"
-           ? `<ion-icon name='people-sharp'></ion-icon>`
-           : `<ion-icon name='person-circle'></ion-icon>`
-        }
+        ${participante.name === "Todos"
+        ? `<ion-icon name='people-sharp'></ion-icon>`
+        : `<ion-icon name='person-circle'></ion-icon>`
+      }
 
         <span class="nome">${participante.name}</span>
         <ion-icon class='check' name='checkmark-outline'></ion-icon>
