@@ -87,13 +87,6 @@ app.post('/messages', async (req, res) => {
 		return;
 	}
 
-	const message = {
-		from: user,
-		to: stripHtml(req.body.to).result.trim(),
-		text: stripHtml(req.body.text).result.trim(),
-		type: stripHtml(req.body.type).result.trim()
-	}
-
 	const schema = Joi.object({
 		from: Joi.string()
 			.required(),
@@ -106,12 +99,19 @@ app.post('/messages', async (req, res) => {
 			.required()
 	});
 
-	const validation = schema.validate(message, { abortEarly: false });
+	const validation = schema.validate({ from: user, ...req.body }, { abortEarly: false });
 
 	if (validation.error) {
 		const err = validation.error.details.map(detail => detail.message);
 		res.status(422).send(err);
 		return;
+	}
+
+	const message = {
+		from: user,
+		to: stripHtml(req.body.to).result.trim(),
+		text: stripHtml(req.body.text).result.trim(),
+		type: stripHtml(req.body.type).result.trim()
 	}
 
 	try {
@@ -172,11 +172,11 @@ app.post('/status', async (req, res) => {
 });
 
 app.delete('/messages/:id', async (req, res) => {
-	const { id } = req.params;
+	const id = stripHtml(req.params.id).result.trim();
 	const user = stripHtml(req.headers.user).result.trim();
 
 	const message = await db.collection("messages").findOne({ _id: new ObjectId(id) });
-	console.log(message);
+
 	if (!message) {
 		res.sendStatus(404);
 		return;
@@ -189,6 +189,63 @@ app.delete('/messages/:id', async (req, res) => {
 
 	try {
 		await db.collection("messages").deleteOne({ _id: new ObjectId(id) });
+		res.sendStatus(200);
+	} catch (err) {
+		console.error(err);
+		res.sendStatus(500);
+	}
+});
+
+app.put('/messages/:id', async (req, res) => {
+	const id = stripHtml(req.params.id).result.trim();
+	const user = stripHtml(req.headers.user).result.trim();
+
+	const schema = Joi.object({
+		from: Joi.string()
+			.required(),
+		to: Joi.string()
+			.required(),
+		text: Joi.string()
+			.required(),
+		type: Joi.string()
+			.valid("message", "private_message")
+			.required()
+	});
+
+	const validation = schema.validate({ from: user, ...req.body }, { abortEarly: false });
+
+	if (validation.error) {
+		const err = validation.error.details.map(detail => detail.message);
+		res.status(422).send(err);
+		return;
+	}
+
+	const newMessage = {
+		from: user,
+		to: stripHtml(req.body.to).result.trim(),
+		text: stripHtml(req.body.text).result.trim(),
+		type: stripHtml(req.body.type).result.trim()
+	}
+
+	const message = await db.collection("messages").findOne({ _id: new ObjectId(id) });
+
+	if (!message) {
+		res.sendStatus(404);
+		return;
+	}
+
+	if (message.from !== user) {
+		res.sendStatus(401);
+		return;
+	}
+
+	try {
+		const time = dayjs().format("HH:mm:ss");
+
+		await db.collection("messages").updateOne({
+			_id: message._id
+		}, { $set: { ...newMessage, time } });
+
 		res.sendStatus(200);
 	} catch (err) {
 		console.error(err);
