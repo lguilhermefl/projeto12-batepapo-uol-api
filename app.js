@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import Joi from 'joi';
 import dayjs from 'dayjs';
 import cors from 'cors';
+import { stripHtml } from "string-strip-html";
 dotenv.config();
 
 const app = express();
@@ -32,7 +33,7 @@ setInterval(async () => {
 }, 15000);
 
 app.post('/participants', async (req, res) => {
-	let name = req.body.name;
+	let name = stripHtml(req.body.name).result.trim();
 
 	const schema = Joi.object({
 		name: Joi.string()
@@ -47,7 +48,7 @@ app.post('/participants', async (req, res) => {
 		return;
 	}
 
-	const isParticipantOnChat = await db.collection("participants").findOne(req.body);
+	const isParticipantOnChat = await db.collection("participants").findOne({ name });
 
 	if (isParticipantOnChat) {
 		res.sendStatus(409);
@@ -78,7 +79,7 @@ app.get('/participants', async (req, res) => {
 });
 
 app.post('/messages', async (req, res) => {
-	const user = req.headers.user;
+	const user = stripHtml(req.headers.user).result.trim();
 	const isParticipantOnChat = await db.collection("participants").findOne({ name: user });
 
 	if (!isParticipantOnChat) {
@@ -88,7 +89,9 @@ app.post('/messages', async (req, res) => {
 
 	const message = {
 		from: user,
-		...req.body
+		to: stripHtml(req.body.to).result.trim(),
+		text: stripHtml(req.body.text).result.trim(),
+		type: stripHtml(req.body.type).result.trim()
 	}
 
 	const schema = Joi.object({
@@ -125,7 +128,7 @@ app.post('/messages', async (req, res) => {
 
 app.get('/messages', async (req, res) => {
 	let limit = parseInt(req.query.limit);
-	const user = req.headers.user;
+	const user = stripHtml(req.headers.user).result.trim();
 
 	if (!limit) {
 		limit = 0;
@@ -152,7 +155,7 @@ app.get('/messages', async (req, res) => {
 });
 
 app.post('/status', async (req, res) => {
-	const user = req.headers.user;
+	const user = stripHtml(req.headers.user).result.trim();
 	const isParticipantOnChat = await db.collection("participants").findOne({ name: user });
 
 	if (!isParticipantOnChat) {
