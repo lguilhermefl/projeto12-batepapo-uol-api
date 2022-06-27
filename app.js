@@ -1,5 +1,5 @@
 import express from 'express';
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 import Joi from 'joi';
 import dayjs from 'dayjs';
@@ -164,6 +164,31 @@ app.post('/status', async (req, res) => {
 	}
 	try {
 		await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
+		res.sendStatus(200);
+	} catch (err) {
+		console.error(err);
+		res.sendStatus(500);
+	}
+});
+
+app.delete('/messages/:id', async (req, res) => {
+	const { id } = req.params;
+	const user = stripHtml(req.headers.user).result.trim();
+
+	const message = await db.collection("messages").findOne({ _id: new ObjectId(id) });
+	console.log(message);
+	if (!message) {
+		res.sendStatus(404);
+		return;
+	}
+
+	if (message.from !== user) {
+		res.sendStatus(401);
+		return;
+	}
+
+	try {
+		await db.collection("messages").deleteOne({ _id: new ObjectId(id) });
 		res.sendStatus(200);
 	} catch (err) {
 		console.error(err);
